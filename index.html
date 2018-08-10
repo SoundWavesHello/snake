@@ -1,0 +1,249 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>I wanted to try making a video game</title>
+
+	    <style>
+	    	* { padding: 0; margin: 0; }
+	    	canvas { background: #eee; display: block; margin: 0 auto; }
+    	</style>	
+	</head>
+
+	<body>
+		<canvas id="myCanvas" width="480" height="320"></canvas>
+
+
+		<script>
+			var canvas = document.getElementById("myCanvas");
+			var context = canvas.getContext("2d");
+
+			var lead_x = canvas.width / 2;
+			var lead_y = canvas.height / 2;
+			var speed = 1;
+			var base = 1;
+			var faster = 2;
+			var dx = speed;
+			var dy = 0;
+			var block_size = 12;
+
+			// the snake will be an array of blocks
+			snake = [];
+			snake.push({x: lead_x, y: lead_y});
+
+			targets = [];
+			target_x = canvas.width/3;
+			target_y = canvas.height/4;
+			targets.push({x: target_x, y: target_y, status: true});
+
+			empty = false;
+			seconds = 1;
+
+			var leftPressed = false;
+			var rightPressed = false;
+			var upPressed = false;
+			var downPressed = false;
+
+			document.addEventListener("keydown", keyDownHandler, false);
+			document.addEventListener("keyup", keyUpHandler, false);
+
+			function keyDownHandler(e){
+				if (e.keyCode == 39){
+					speed = faster;
+					rightPressed = true;
+				}
+				else if (e.keyCode == 38){
+					speed = faster;
+					upPressed = true;
+				}
+				else if (e.keyCode == 37){
+					speed = faster;
+					leftPressed = true;
+				}
+				else if (e.keyCode == 40){
+					speed = faster;
+					downPressed = true;
+				}
+			}
+
+			function keyUpHandler(e){
+				if (e.keyCode == 39){
+					rightPressed = false;
+				}
+				else if (e.keyCode == 38){
+					upPressed = false;
+				}
+				else if (e.keyCode == 37){
+					leftPressed = false;
+				}
+				else if (e.keyCode == 40){
+					downPressed = false;
+				}
+			}
+
+			function getRandomInt(max) {
+				min = Math.ceil(0);
+				max = Math.floor(max);
+				return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive, minimum inclusive
+			}
+
+
+			function draw_block(x, y, color){
+				context.beginPath();
+				context.rect(x, y, block_size, block_size);
+				context.fillStyle=color;
+				context.fill();
+				context.closePath();
+			}
+
+
+			function draw_targets(){
+				for(var i=0; i<targets.length; i++){
+					if (targets[i].status==true){
+						draw_block(targets[i].x, targets[i].y, 'red');
+					}
+				}
+			}
+
+			function generate_target(){
+				var temp_x = getRandomInt(canvas.width-block_size);
+				var temp_y = getRandomInt(canvas.height-block_size);
+				targets.push({x: temp_x, y: temp_y, status: true});
+				empty = false;
+			}
+
+			function eat_food(){
+				for (var i=0; i<targets.length; i++){
+					var curr = targets[i];
+					if (curr.status){
+						// if it was eaten
+						if (lead_x > curr.x - block_size && lead_x < curr.x + block_size && lead_y > curr.y - block_size && lead_y < curr.y + block_size){
+							curr.status = false;
+							snake.push({x: 0, y: 0});
+						}
+					}
+				}
+
+				empty = true;
+				for (var i=0; i<targets.length; i++){
+					if (targets[i].status){
+						empty = false;
+					}
+				}
+			}
+
+			function change_direction(){
+
+				if (!rightPressed && !leftPressed && !upPressed && !downPressed){
+					if (dx > 0){
+						dx = base;
+					}
+					else if (dx < 0){
+						dx = -base;
+					}
+
+					if (dy > 0) {
+						dy = base;
+					}
+					else if (dy < 0){
+						dy = -base;
+					}
+				}
+
+				else if (rightPressed){
+					dx = speed;
+					dy = 0;
+				}
+				else if (leftPressed){
+					dx = -speed;
+					dy = 0;
+				}
+				else if (upPressed){
+					dx = 0;
+					dy = -speed;
+				}
+				else if (downPressed){
+					dx = 0;
+					dy = speed;
+				}
+			}
+
+			function update_snake(){
+				var prev_x = 0;
+				var prev_y = 0;
+				var alt_x = lead_x;
+				var alt_y = lead_y;
+
+				for (var i=0; i<snake.length; i++){
+					if (i%2==0){
+						prev_x = snake[i].x;
+						prev_y = snake[i].y;
+						snake[i].x = alt_x;
+						snake[i].y = alt_y;
+					}
+					else{
+						alt_x = snake[i].x;
+						alt_y = snake[i].y;
+						snake[i].x = prev_x;
+						snake[i].y = prev_y;
+					}
+				}
+			}
+
+			function handle_collision(){
+				for (var i=1; i<snake.length; i++){
+					block = snake[i];
+					if (block.x < lead_x + block_size && lead_x > block.x + block_size && block.y < lead_y + block_size && lead_y > block.y + block_size){
+						alert("GAME OVER");
+					}
+				}
+			}
+
+			function draw_snake(){
+				for (var i=0; i<snake.length; i++){
+					draw_block(snake[i].x, snake[i].y, 'green');
+				}
+			}
+
+
+			function draw() {
+
+				context.clearRect(0, 0, canvas.width, canvas.height)
+
+				draw_snake();
+
+				if (empty == true || seconds % 500 == 0){
+					generate_target();
+				}
+
+
+				eat_food();
+
+				draw_targets();
+
+				change_direction();
+
+
+
+				if (lead_x + dx + block_size < canvas.width && lead_x + dx > 0){
+					lead_x += dx;
+				}
+				
+
+				if (lead_y + dy + block_size < canvas.height && lead_y + dy > 0){
+					lead_y += dy;
+				}
+
+				// handle_collision();
+
+				update_snake();
+
+				seconds++;
+			}
+
+			setInterval(draw, 10);
+
+
+		</script>
+	</body>
+
+</html>
